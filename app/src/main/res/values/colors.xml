@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <color name="primary">#01ABAA</color>
-    <color name="primary_dark">#168a8f</color>
-    <color name="accent">#FF5252</color>
+
+    <color name="primary">#1d2f3e</color>
+    <color name="primary_dark">#152737</color>
+    <color name="accent">#F53240</color>
+
+    <!--<color name="primary">#01ABAA</color>-->
+    <!--<color name="primary_dark">#168a8f</color>-->
+    <!--<color name="accent">#FF5252</color>-->
     <!--<color name="accent_too_old">#00BCD4</color>-->
 
     <color name="primary_old">#1fb58f</color>

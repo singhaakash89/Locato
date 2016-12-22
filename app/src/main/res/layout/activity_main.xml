@@ -21,16 +21,17 @@
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
             app:layout_scrollFlags="scroll|enterAlways"
-            app:popupTheme="@style/AppTheme.PopupOverlay" />
+            app:popupTheme="@style/AppTheme.PopupOverlay"
+            android:layout_gravity="center_horizontal"/>
 
         <android.support.design.widget.TabLayout
             android:id="@+id/tabLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:tabTextColor="@color/white"
-            app:tabIndicatorColor="@color/navy_blue_light"
-            app:tabSelectedTextColor="@color/navy_blue_light"
-            app:tabIndicatorHeight="5dp"/>
+            app:tabIndicatorColor="@color/coral"
+            app:tabSelectedTextColor="@color/white"
+            app:tabIndicatorHeight="3dp"/>
 
     </android.support.design.widget.AppBarLayout>
 

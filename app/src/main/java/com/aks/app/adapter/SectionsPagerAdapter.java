@@ -17,15 +17,18 @@ import com.aks.app.fragment.PlaceholderFragment;
  */
 public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
 
+    private FragmentManager fragmentManager;
+
     public SectionsPagerAdapter(FragmentManager fm) {
         super(fm);
+        fragmentManager = fm;
     }
 
     @Override
     public Fragment getItem(int position) {
         // getItem is called to instantiate the fragment for the given page.
         // Return a PlaceholderFragment (defined as a static inner class below).
-        return PlaceholderFragment.newInstance(position);
+        return PlaceholderFragment.newInstance(position, fragmentManager);
     }
 
     @Override
