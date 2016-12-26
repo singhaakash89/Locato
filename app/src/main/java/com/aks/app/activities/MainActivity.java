@@ -9,6 +9,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -60,10 +61,8 @@ public class MainActivity extends AppCompatActivity {
         //FAB
         initFAB();
 
-        //ViewPager and Fragment Adapater
-        initViewPager();
-
-        //Tablayout
+        //ViewPager and Tab together
+        initViewPagerAndTabs();
         initTabLayout();
 
     }
@@ -87,14 +86,14 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void initViewPager() {
-        // Create the adapter that will return a fragment for each of the two
-        // primary sections of the activity.
-        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
-
-        // Set up the ViewPager with the sections adapter.
+    private void initViewPagerAndTabs() {
         mViewPager = (ViewPager) findViewById(R.id.container);
+        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
+        mSectionsPagerAdapter.addFragment(PlaceholderFragment.newInstance(0,getSupportFragmentManager()), "ALL CONTACTS");
+        mSectionsPagerAdapter.addFragment(PlaceholderFragment.newInstance(1,getSupportFragmentManager()), "CONTACTS MAP");
         mViewPager.setAdapter(mSectionsPagerAdapter);
+        TabLayout tabLayout = (TabLayout) findViewById(R.id.tabLayout);
+        tabLayout.setupWithViewPager(mViewPager);
     }
 
     private void initTabLayout() {

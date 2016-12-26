@@ -14,6 +14,8 @@ import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,6 +25,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.aks.app.R;
+import com.aks.app.adapter.RecyclerAdapter;
 import com.aks.app.json_parser.AsyncTaskHandler;
 import com.aks.app.json_parser.model.Contacts;
 import com.aks.app.json_parser.model.Marker;
@@ -49,6 +52,7 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
     private MarkerOptions marker;
     private LatLng position;
     private static FragmentManager fragmentManager;
+
     // Request code for READ_CONTACTS. It can be any number > 0.
     private static final int PERMISSIONS_REQUEST_READ_CONTACTS = 100;
 
@@ -56,7 +60,7 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
      * The fragment argument representing the section number for this
      * fragment.
      */
-    private static final String ARG_SECTION_NUMBER = "section_number";
+    private static final String ARG_SECTION_NUMBER = "PlaceholderFragment$section_number";
 
     public PlaceholderFragment() {
     }
@@ -77,38 +81,55 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         int fragment_id = getArguments().getInt(ARG_SECTION_NUMBER);
-        View rootView = null;
+
         TextView textView = null;
         switch (fragment_id) {
             case 0:
-                rootView = inflater.inflate(R.layout.fragment_one, container, false);
-                listView = (ListView) rootView.findViewById(R.id.listview);
-                showContacts();
-//                ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_list_item_1, arrayList);
-//                listView.setAdapter(arrayAdapter);
-                break;
+                RecyclerView recyclerView = (RecyclerView) inflater.inflate(R.layout.fragment_one, container, false);
+                setupRecyclerView(recyclerView);
+                //showContacts();
+                return recyclerView;
 
             case 1:
+                View rootView = null;
                 ArrayList<Marker> markerArrayList = new ArrayList<>();
                 Marker marker = null;
-                ArrayList<Contacts> contactsArrayList = AsyncTaskHandler.getJSONArraylist();
-                for (Contacts contacts : contactsArrayList) {
-                    marker = new Marker();
-                    marker.setLattitude(Double.parseDouble(contacts.getLatitude()));
-                    marker.setLongitude(Double.parseDouble(contacts.getLongitude()));
-                    markerArrayList.add(marker);
-                }
-                showMarker(inflater, container, rootView, savedInstanceState, markerArrayList);
-                break;
+//                ArrayList<Contacts> contactsArrayList = AsyncTaskHandler.getJSONArraylist();
+//                for (Contacts contacts : contactsArrayList) {
+//                    marker = new Marker();
+//                    marker.setLattitude(Double.parseDouble(contacts.getLatitude()));
+//                    marker.setLongitude(Double.parseDouble(contacts.getLongitude()));
+//                    markerArrayList.add(marker);
+//                }
+                rootView = showMarker(inflater, container, savedInstanceState, markerArrayList);
+                return rootView;
         }
-        return rootView;
+        return null;
     }
 
-    private void showMarker(LayoutInflater inflater, ViewGroup container, View rootView, Bundle savedInstanceState, ArrayList<Marker> markerArrayList) {
+    private void setupRecyclerView(RecyclerView recyclerView) {
+        recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+        RecyclerAdapter recyclerAdapter = new RecyclerAdapter(createItemList());
+        recyclerView.setAdapter(recyclerAdapter);
+    }
+
+    private List<String> createItemList() {
+        List<String> itemList = new ArrayList<>();
+        Bundle bundle = getArguments();
+        if(bundle!=null) {
+//            int itemsCount = bundle.getInt(ITEMS_COUNT_KEY);
+            for (int i = 0; i < 100; i++) {
+                itemList.add("Item " + i);
+            }
+        }
+        return itemList;
+    }
+
+    private View showMarker(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState, ArrayList<Marker> markerArrayList) {
 
         ArrayList<MarkerOptions> markerOptions = new ArrayList<>();
 
-        rootView = inflater.inflate(R.layout.fragment_two, container, false);
+        View rootView = inflater.inflate(R.layout.fragment_two, container, false);
 
         // Getting Reference to SupportMapFragment of activity_map.xml
         MapView mapView = (MapView) rootView.findViewById(R.id.map);
@@ -143,6 +164,7 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
         // Getting reference to google map
         mapView.getMapAsync(this);
 
+        return rootView;
     }
 
     @Override
@@ -218,5 +240,9 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
 
         return contacts;
     }
+
+
+    //'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
 }
 
