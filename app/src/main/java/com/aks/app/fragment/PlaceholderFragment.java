@@ -6,11 +6,13 @@ package com.aks.app.fragment;
 
 
 import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.ContactsContract;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -19,8 +21,11 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AbsListView;
 import android.widget.ArrayAdapter;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -48,10 +53,18 @@ import static android.support.v4.content.PermissionChecker.checkSelfPermission;
  */
 public class PlaceholderFragment extends Fragment implements OnMapReadyCallback {
 
-    private ListView listView;
+    private boolean userScrolled = true;
+    private int pastVisiblesItems, visibleItemCount, totalItemCount;
+    private LinearLayoutManager mLayoutManager;
+    private RecyclerAdapter recyclerAdapter;
     private MarkerOptions marker;
     private LatLng position;
     private static FragmentManager fragmentManager;
+    private ListView listView;
+    private RecyclerView recyclerView;
+    private RelativeLayout progressBarLayout;
+    private View view;
+    private List<String> list;
 
     // Request code for READ_CONTACTS. It can be any number > 0.
     private static final int PERMISSIONS_REQUEST_READ_CONTACTS = 100;
@@ -81,17 +94,20 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         int fragment_id = getArguments().getInt(ARG_SECTION_NUMBER);
-
-        TextView textView = null;
+        view = inflater.inflate(R.layout.fragment_one, container, false);
         switch (fragment_id) {
             case 0:
-                RecyclerView recyclerView = (RecyclerView) inflater.inflate(R.layout.fragment_one, container, false);
-                setupRecyclerView(recyclerView);
+                //initializing recyclerView
+                progressBarLayout = initRecyclerView();
+                //setup recycler view
+                setupRecyclerView();
+                //add scroll listener
+                addScrollListener(progressBarLayout);
+
                 //showContacts();
                 return recyclerView;
 
             case 1:
-                View rootView = null;
                 ArrayList<Marker> markerArrayList = new ArrayList<>();
                 Marker marker = null;
 //                ArrayList<Contacts> contactsArrayList = AsyncTaskHandler.getJSONArraylist();
@@ -101,28 +117,93 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
 //                    marker.setLongitude(Double.parseDouble(contacts.getLongitude()));
 //                    markerArrayList.add(marker);
 //                }
-                rootView = showMarker(inflater, container, savedInstanceState, markerArrayList);
-                return rootView;
+                view = showMarker(inflater, container, savedInstanceState, markerArrayList);
+                return view;
         }
         return null;
     }
 
-    private void setupRecyclerView(RecyclerView recyclerView) {
-        recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
-        RecyclerAdapter recyclerAdapter = new RecyclerAdapter(createItemList());
+    private RelativeLayout initRecyclerView() {
+        recyclerView = (RecyclerView) view.findViewById(R.id.recyclerView);
+        progressBarLayout = (RelativeLayout) recyclerView.findViewById(R.id.progressBarLayout);
+        mLayoutManager = new LinearLayoutManager(getActivity());
+        //recyclerView.setHasFixedSize(true);
+        recyclerView.setLayoutManager(mLayoutManager);
+        return progressBarLayout;
+    }
+
+    private void setupRecyclerView() {
+        list = createItemList();
+        recyclerAdapter = new RecyclerAdapter(list);
         recyclerView.setAdapter(recyclerAdapter);
+        recyclerAdapter.notifyDataSetChanged();
+    }
+
+    private void addScrollListener(final RelativeLayout progressBarLayout) {
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+                // If scroll state is touch scroll then set userScrolled
+                // true
+                if (newState == AbsListView.OnScrollListener.SCROLL_STATE_TOUCH_SCROLL) {
+                    userScrolled = true;
+                }
+            }
+
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                // Here get the child count, item count and visibleitems
+                // from layout manager
+                visibleItemCount = mLayoutManager.getChildCount();
+                totalItemCount = mLayoutManager.getItemCount();
+                pastVisiblesItems = mLayoutManager.findFirstVisibleItemPosition();
+
+                // Now check if userScrolled is true and also check if
+                // the item is end then update recycler view and set
+                // userScrolled to false
+                if (userScrolled && (visibleItemCount + pastVisiblesItems) == totalItemCount) {
+                    userScrolled = false;
+                    updateRecyclerView(progressBarLayout);
+                }
+            }
+        });
+    }
+
+    // Method for repopulating recycler view
+    private void updateRecyclerView(final RelativeLayout progressBarLayout) {
+        // Show Progress Layout
+        //progressBarLayout.setVisibility(View.VISIBLE);
+        final ProgressDialog progressDialog = new ProgressDialog(getActivity());
+        progressDialog.setMessage("Loading...");
+        progressDialog.show();
+
+        // Handler to show refresh for a period of time you can use async task
+        // while commnunicating server
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 20; i <= 30; i++) {
+                    list.add("Item " + i);
+                }
+                // notify adapter
+                recyclerAdapter.notifyDataSetChanged();
+                // Toast for task completion
+                Toast.makeText(getActivity(), "Items Updated.", Toast.LENGTH_SHORT).show();
+                // After adding new data hide the view.
+                //progressBarLayout.setVisibility(View.GONE);
+                progressDialog.dismiss();
+            }
+        }, 5000);
     }
 
     private List<String> createItemList() {
-        List<String> itemList = new ArrayList<>();
-        Bundle bundle = getArguments();
-        if(bundle!=null) {
-//            int itemsCount = bundle.getInt(ITEMS_COUNT_KEY);
-            for (int i = 0; i < 100; i++) {
-                itemList.add("Item " + i);
-            }
+        list = new ArrayList<>();
+        for (int i = 1; i <= 10; i++) {
+            list.add("Item " + i);
         }
-        return itemList;
+        return list;
     }
 
     private View showMarker(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState, ArrayList<Marker> markerArrayList) {
