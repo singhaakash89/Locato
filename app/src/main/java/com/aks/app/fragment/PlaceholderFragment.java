@@ -184,7 +184,7 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                int start = list.size();
+                int start = list.size() + 1;
                 int end = start + 10;
                 for (int i = start; i <= end; i++) {
                     list.add(" - " + i);
@@ -322,6 +322,63 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
         cursor.close();
 
         return contacts;
+    }
+
+    /**
+     * Read the name of all the contacts.
+     *
+     * @return a list of names.
+     */
+    private List<Contacts> getAllContact() {
+        Contacts contacts = null;
+        String name = null;
+        String email = null;
+        String phone = null;
+        String officePhone = null;
+        List<Contacts> contactsArrayList = new ArrayList<>();
+        // Get the ContentResolver
+        ContentResolver cr = getActivity().getContentResolver();
+        // Get the Cursor of all the contacts
+        Cursor cursorName = null;
+        Cursor cursorPhone = null;
+        Cursor cursorEmail = null;
+        cursorName = cr.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, ContactsContract.Contacts.DISPLAY_NAME + " ASC");
+        cursorPhone = cr.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
+        cursorEmail = cr.query(ContactsContract.CommonDataKinds.Email.CONTENT_URI, null, null, null, null);
+
+
+        // Move the cursor to first. Also check whether the cursor is empty or not.
+        if (cursorPhone.moveToFirst()) {
+            // Iterate through the cursor
+            do {
+                // Get the contacts name
+                name = cursorName.getString(cursorName.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+                email = cursorEmail.getString(cursorEmail.getColumnIndex(ContactsContract.CommonDataKinds.Email.DATA));
+                int phoneType = cursorPhone.getInt(cursorPhone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.TYPE));
+                switch (phoneType) {
+                    case ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE:
+                        phone = cursorPhone.getString(cursorPhone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                        break;
+
+                    case ContactsContract.CommonDataKinds.Phone.TYPE_WORK:
+                        officePhone = cursorPhone.getString(cursorPhone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                        break;
+
+                }
+                contacts = new Contacts();
+                contacts.setName(name);
+                contacts.setEmail(email);
+                contacts.setPhone(phone);
+                contacts.setOfficePhone(officePhone);
+                contactsArrayList.add(contacts);
+            } while (cursorName.moveToNext() && cursorName.moveToNext() && cursorName.moveToNext());
+        }
+        // Close the curosor
+        cursorName.close();
+        cursorEmail.close();
+        cursorPhone.close();
+
+        return contactsArrayList;
     }
 
 
