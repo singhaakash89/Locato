@@ -184,8 +184,10 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                for (int i = 20; i <= 30; i++) {
-                    list.add("Item " + i);
+                int start = list.size();
+                int end = start + 10;
+                for (int i = start; i <= end; i++) {
+                    list.add(" - " + i);
                 }
                 // notify adapter
                 recyclerAdapter.notifyDataSetChanged();
@@ -201,7 +203,7 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
     private List<String> createItemList() {
         list = new ArrayList<>();
         for (int i = 1; i <= 10; i++) {
-            list.add("Item " + i);
+            list.add(" - " + i);
         }
         return list;
     }
