@@ -9,17 +9,18 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
+import android.widget.Toast;
 
 import com.aks.app.R;
 import com.aks.app.adapter.SectionsPagerAdapter;
 import com.aks.app.fragment.PlaceholderFragment;
 import com.aks.app.json_parser.AsyncTaskHandler;
+import com.aks.app.sharedPreference.SharedPreferenceManager;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -33,6 +34,8 @@ public class MainActivity extends AppCompatActivity {
      * {@link FragmentStatePagerAdapter}.
      */
     private SectionsPagerAdapter mSectionsPagerAdapter;
+
+    private static final String hasContactFetched = "hasContactFetched";
 
     /**
      * The {@link ViewPager} that will host the section contents.
@@ -53,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         context = this;
         progressDialog = new ProgressDialog(context);
+        SharedPreferenceManager.createInstance(context);
         setContentView(R.layout.activity_main);
 
         //Toolbar
@@ -81,7 +85,10 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 Log.d("onClick", "onClick");
                 //JSON from URL
-                getJSONFromURL();
+                if (!SharedPreferenceManager.getInstance().getBoolean(hasContactFetched))
+                    getJSONFromURL();
+                else
+                    Toast.makeText(context, "Contacts already saved", Toast.LENGTH_SHORT).show();
             }
         });
     }
@@ -89,8 +96,8 @@ public class MainActivity extends AppCompatActivity {
     private void initViewPagerAndTabs() {
         mViewPager = (ViewPager) findViewById(R.id.container);
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
-        mSectionsPagerAdapter.addFragment(PlaceholderFragment.newInstance(0,getSupportFragmentManager()), "ALL CONTACTS");
-        mSectionsPagerAdapter.addFragment(PlaceholderFragment.newInstance(1,getSupportFragmentManager()), "CONTACTS MAP");
+        mSectionsPagerAdapter.addFragment(PlaceholderFragment.newInstance(0, getSupportFragmentManager()), "ALL CONTACTS");
+        mSectionsPagerAdapter.addFragment(PlaceholderFragment.newInstance(1, getSupportFragmentManager()), "CONTACTS MAP");
         mViewPager.setAdapter(mSectionsPagerAdapter);
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabLayout);
         tabLayout.setupWithViewPager(mViewPager);
@@ -129,5 +136,6 @@ public class MainActivity extends AppCompatActivity {
         Log.d("getJSONFromURL", "getJSONFromURL");
         AsyncTaskHandler.createInstance(context, progressDialog);
         AsyncTaskHandler.getInstance().execute();
+        SharedPreferenceManager.getInstance().putBoolean(hasContactFetched, true);
     }
 }

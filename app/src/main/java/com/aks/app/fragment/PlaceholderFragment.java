@@ -18,6 +18,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,6 +32,7 @@ import android.widget.Toast;
 
 import com.aks.app.R;
 import com.aks.app.adapter.RecyclerAdapter;
+import com.aks.app.database.model.Contact;
 import com.aks.app.json_parser.AsyncTaskHandler;
 import com.aks.app.json_parser.model.Contacts;
 import com.aks.app.json_parser.model.Marker;
@@ -64,7 +66,8 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
     private RecyclerView recyclerView;
     private RelativeLayout progressBarLayout;
     private View view;
-    private List<String> list;
+    private List<Contact> contactList;
+    private int count = 0;
 
     // Request code for READ_CONTACTS. It can be any number > 0.
     private static final int PERMISSIONS_REQUEST_READ_CONTACTS = 100;
@@ -94,18 +97,18 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         int fragment_id = getArguments().getInt(ARG_SECTION_NUMBER);
-        view = inflater.inflate(R.layout.fragment_one, container, false);
         switch (fragment_id) {
             case 0:
+                view = inflater.inflate(R.layout.fragment_one, container, false);
                 //initializing recyclerView
                 progressBarLayout = initRecyclerView();
                 //setup recycler view
                 setupRecyclerView();
                 //add scroll listener
                 addScrollListener(progressBarLayout);
-
+                //show 10 Contacts
                 //showContacts();
-                return recyclerView;
+                break;
 
             case 1:
                 ArrayList<Marker> markerArrayList = new ArrayList<>();
@@ -118,23 +121,25 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
 //                    markerArrayList.add(marker);
 //                }
                 view = showMarker(inflater, container, savedInstanceState, markerArrayList);
-                return view;
+                break;
         }
-        return null;
+        return view;
     }
 
     private RelativeLayout initRecyclerView() {
         recyclerView = (RecyclerView) view.findViewById(R.id.recyclerView);
-        progressBarLayout = (RelativeLayout) recyclerView.findViewById(R.id.progressBarLayout);
+        progressBarLayout = (RelativeLayout) view.findViewById(R.id.progressBarLayout);
+        Log.d("progressBarLayout : 1", " - " + progressBarLayout + " ;");
         mLayoutManager = new LinearLayoutManager(getActivity());
-        //recyclerView.setHasFixedSize(true);
+        recyclerView.setHasFixedSize(true);
         recyclerView.setLayoutManager(mLayoutManager);
         return progressBarLayout;
     }
 
     private void setupRecyclerView() {
-        list = createItemList();
-        recyclerAdapter = new RecyclerAdapter(list);
+        //list = createItemList();
+        List<Contact> contactList = createContactList();
+        recyclerAdapter = new RecyclerAdapter(contactList);
         recyclerView.setAdapter(recyclerAdapter);
         recyclerAdapter.notifyDataSetChanged();
     }
@@ -174,38 +179,176 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
     // Method for repopulating recycler view
     private void updateRecyclerView(final RelativeLayout progressBarLayout) {
         // Show Progress Layout
-        //progressBarLayout.setVisibility(View.VISIBLE);
-        final ProgressDialog progressDialog = new ProgressDialog(getActivity());
-        progressDialog.setMessage("Loading...");
-        progressDialog.show();
-
+        progressBarLayout.setVisibility(View.VISIBLE);
         // Handler to show refresh for a period of time you can use async task
         // while commnunicating server
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                int start = list.size() + 1;
-                int end = start + 10;
-                for (int i = start; i <= end; i++) {
-                    list.add(" - " + i);
-                }
+                //fetching next 20 contacts
+                getAllContact(20);
                 // notify adapter
                 recyclerAdapter.notifyDataSetChanged();
                 // Toast for task completion
-                Toast.makeText(getActivity(), "Items Updated.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getActivity(), "Contacts updated.", Toast.LENGTH_SHORT).show();
                 // After adding new data hide the view.
-                //progressBarLayout.setVisibility(View.GONE);
-                progressDialog.dismiss();
+                progressBarLayout.setVisibility(View.GONE);
             }
-        }, 5000);
+        }, 2000);
     }
 
-    private List<String> createItemList() {
-        list = new ArrayList<>();
-        for (int i = 1; i <= 10; i++) {
-            list.add(" - " + i);
+    private List<Contact> createContactList() {
+        contactList = new ArrayList<>();
+        contactList = getAllContact(20);
+        return contactList;
+    }
+
+    /**
+     * Show the contacts in the ListView.
+     */
+    private void showContacts() {
+        Log.d("Inside showContacts", " Done");
+        // Check the SDK version and whether the permission is already granted or not.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(getActivity(), Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
+            Log.d("Inside showContacts : if", " Done");
+            requestPermissions(new String[]{Manifest.permission.READ_CONTACTS}, PERMISSIONS_REQUEST_READ_CONTACTS);
+            //After this point you wait for callback in onRequestPermissionsResult(int, String[], int[]) overriden method
+        } else {
+            Log.d("Inside showContacts : else", " Done");
+            // Android version is lesser than 6.0 or the permission is already granted.
+//            List<String> list = getContactNames();
+//            ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_list_item_1, list);
+//            listView.setAdapter(adapter);
+
+            getAllContact(20);
         }
-        return list;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == PERMISSIONS_REQUEST_READ_CONTACTS) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission is granted
+                showContacts();
+            } else {
+                Toast.makeText(getActivity(), "Until you grant the permission, we canot display the names", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+
+    /**
+     * Read the name of all the contacts.
+     *
+     * @return a list of names.
+     */
+    private List<Contact> getAllContact(int countUpdate) {
+        Log.d("Inside getAllContact", " Done");
+        Contact contact;
+        String id = null;
+        String name = null;
+        String email = null;
+        String homePhone = null;
+        String phone = null;
+        String officePhone = null;
+
+        // Get the ContentResolver
+        ContentResolver cr = getActivity().getContentResolver();
+        //initialize cusor
+        Cursor cur = cr.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, ContactsContract.Contacts.DISPLAY_NAME + " ASC" + " LIMIT 10 OFFSET " + count + "");
+        if (cur.getCount() > 0) {
+            Log.d("Inside if_cur_count>0", " Done");
+            while (cur.moveToNext()) {
+                Log.d("Inside while main cursor", " Done");
+                id = null;
+                name = null;
+                email = null;
+                homePhone = null;
+                phone = null;
+                officePhone = null;
+
+                //Id
+                id = cur.getString(
+                        cur.getColumnIndex(ContactsContract.Contacts._ID));
+
+                //Name
+                name = cur.getString(cur.getColumnIndex(
+                        ContactsContract.Contacts.DISPLAY_NAME));
+
+                //Email
+                Cursor eCur = cr.query(ContactsContract.CommonDataKinds.Email.CONTENT_URI,
+                        null,
+                        ContactsContract.CommonDataKinds.Email.CONTACT_ID + " = ?",
+                        new String[]{id}, null);
+
+
+                if (eCur.getCount() > 0) {
+                    Log.d("Inside if_email_cur_count>0", " Done");
+                    while (eCur.moveToNext()) {
+                        email = eCur.getString(eCur.getColumnIndex(ContactsContract.CommonDataKinds.Email.DATA));
+                    }
+                    eCur.close();
+                }
+
+                if (cur.getInt(cur.getColumnIndex(ContactsContract.Contacts.HAS_PHONE_NUMBER)) > 0) {
+                    Log.d("Inside if_phone_cur_count>0", " Done");
+                    Cursor pCur = cr.query(ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                            null,
+                            ContactsContract.CommonDataKinds.Phone.CONTACT_ID + " = ?",
+                            new String[]{id}, null);
+                    while (pCur.moveToNext()) {
+                        Log.d("Inside phone while", " Done");
+                        int type = pCur.getInt(pCur.getColumnIndex(ContactsContract.CommonDataKinds.Phone.TYPE));
+                        switch (type) {
+                            case ContactsContract.CommonDataKinds.Phone.TYPE_HOME:
+                                homePhone = pCur.getString(pCur.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                                break;
+                            case ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE:
+                                phone = pCur.getString(pCur.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                                break;
+                            case ContactsContract.CommonDataKinds.Phone.TYPE_WORK:
+                                officePhone = pCur.getString(pCur.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                                break;
+                        }
+                    }
+                    pCur.close();
+                }
+
+                Log.d("name", "" + name + ";");
+                Log.d("email", "" + email + ";");
+                Log.d("phone", "" + phone + ";");
+                Log.d("homePhone", "" + homePhone + ";");
+                Log.d("office", "" + officePhone + ";");
+                Log.d("============", "================================");
+                Log.d("=============", "================================");
+                Log.d("\n", "\n");
+
+                //updating array list
+                contact = new Contact();
+                contact.setName(name);
+                contact.setEmail(email);
+                contact.setPhone(phone);
+                contact.setOfficePhone(officePhone);
+                contactList.add(contact);
+            }
+        }
+
+        cur.close();
+
+        count = count + countUpdate;
+
+        //displaying list before populating
+        for (Contact contact1 : contactList) {
+            System.out.println("name : " + contact1.getName());
+            System.out.println("email : " + contact1.getEmail());
+            System.out.println("phone : " + contact1.getPhone());
+            System.out.println("office : " + contact1.getOfficePhone());
+            System.out.println("===============");
+            System.out.println("\n\n");
+        }
+
+        System.out.println("contactList.size : " + contactList.size());
+        return contactList;
     }
 
     private View showMarker(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState, ArrayList<Marker> markerArrayList) {
@@ -268,121 +411,6 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
         googleMap.animateCamera(updateZoom);
     }
 
-    /**
-     * Show the contacts in the ListView.
-     */
-    private void showContacts() {
-        // Check the SDK version and whether the permission is already granted or not.
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && checkSelfPermission(getActivity(), Manifest.permission.READ_CONTACTS) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{Manifest.permission.READ_CONTACTS}, PERMISSIONS_REQUEST_READ_CONTACTS);
-            //After this point you wait for callback in onRequestPermissionsResult(int, String[], int[]) overriden method
-        } else {
-            // Android version is lesser than 6.0 or the permission is already granted.
-            List<String> list = getContactNames();
-            ArrayAdapter<String> adapter = new ArrayAdapter<String>(getActivity(), android.R.layout.simple_list_item_1, list);
-            listView.setAdapter(adapter);
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                                           int[] grantResults) {
-        if (requestCode == PERMISSIONS_REQUEST_READ_CONTACTS) {
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permission is granted
-                showContacts();
-            } else {
-                Toast.makeText(getActivity(), "Until you grant the permission, we canot display the names", Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-
-    /**
-     * Read the name of all the contacts.
-     *
-     * @return a list of names.
-     */
-    private List<String> getContactNames() {
-        List<String> contacts = new ArrayList<>();
-        // Get the ContentResolver
-        ContentResolver cr = getActivity().getContentResolver();
-        // Get the Cursor of all the contacts
-        Cursor cursor = cr.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, ContactsContract.Contacts.DISPLAY_NAME + " ASC");
-
-        // Move the cursor to first. Also check whether the cursor is empty or not.
-        if (cursor.moveToFirst()) {
-            // Iterate through the cursor
-            do {
-                // Get the contacts name
-                String name = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-                contacts.add(name);
-            } while (cursor.moveToNext());
-        }
-        // Close the curosor
-        cursor.close();
-
-        return contacts;
-    }
-
-    /**
-     * Read the name of all the contacts.
-     *
-     * @return a list of names.
-     */
-    private List<Contacts> getAllContact() {
-        Contacts contacts = null;
-        String name = null;
-        String email = null;
-        String phone = null;
-        String officePhone = null;
-        List<Contacts> contactsArrayList = new ArrayList<>();
-        // Get the ContentResolver
-        ContentResolver cr = getActivity().getContentResolver();
-        // Get the Cursor of all the contacts
-        Cursor cursorName = null;
-        Cursor cursorPhone = null;
-        Cursor cursorEmail = null;
-        cursorName = cr.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, ContactsContract.Contacts.DISPLAY_NAME + " ASC");
-        cursorPhone = cr.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, null);
-        cursorEmail = cr.query(ContactsContract.CommonDataKinds.Email.CONTENT_URI, null, null, null, null);
-
-
-        // Move the cursor to first. Also check whether the cursor is empty or not.
-        if (cursorPhone.moveToFirst()) {
-            // Iterate through the cursor
-            do {
-                // Get the contacts name
-                name = cursorName.getString(cursorName.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-                email = cursorEmail.getString(cursorEmail.getColumnIndex(ContactsContract.CommonDataKinds.Email.DATA));
-                int phoneType = cursorPhone.getInt(cursorPhone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.TYPE));
-                switch (phoneType) {
-                    case ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE:
-                        phone = cursorPhone.getString(cursorPhone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                        break;
-
-                    case ContactsContract.CommonDataKinds.Phone.TYPE_WORK:
-                        officePhone = cursorPhone.getString(cursorPhone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                        break;
-
-                }
-                contacts = new Contacts();
-                contacts.setName(name);
-                contacts.setEmail(email);
-                contacts.setPhone(phone);
-                contacts.setOfficePhone(officePhone);
-                contactsArrayList.add(contacts);
-            } while (cursorName.moveToNext() && cursorName.moveToNext() && cursorName.moveToNext());
-        }
-        // Close the curosor
-        cursorName.close();
-        cursorEmail.close();
-        cursorPhone.close();
-
-        return contactsArrayList;
-    }
-
-
-    //'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 }
 

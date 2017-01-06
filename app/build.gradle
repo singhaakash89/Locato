@@ -6,7 +6,8 @@ android {
     defaultConfig {
         applicationId "com.aks.app"
         minSdkVersion 17
-        targetSdkVersion 23
+        maxSdkVersion 25
+        targetSdkVersion 22
         versionCode 1
         versionName "1.0"
     }

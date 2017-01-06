@@ -1,14 +1,18 @@
 package com.aks.app.json_parser;
 
+import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.ContentProviderOperation;
 import android.content.Context;
 import android.content.Intent;
 import android.content.OperationApplicationException;
+import android.content.pm.PackageManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.RemoteException;
 import android.provider.ContactsContract;
 import android.util.Log;
+import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import com.aks.app.json_parser.model.Contacts;
@@ -21,6 +25,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+
+import static android.support.v4.content.PermissionChecker.checkSelfPermission;
 
 /**
  * Created by Aakash Singh on 21-12-2016.

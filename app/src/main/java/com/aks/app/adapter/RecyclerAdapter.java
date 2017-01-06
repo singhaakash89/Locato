@@ -8,15 +8,16 @@ import android.view.ViewGroup;
 
 import com.aks.app.R;
 import com.aks.app.adapter.viewholder.RecyclerItemViewHolder;
+import com.aks.app.database.model.Contact;
 
 import java.util.List;
 
 public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private List<String> mItemList;
+    private List<Contact> contactList;
 
-    public RecyclerAdapter(List<String> itemList) {
-        mItemList = itemList;
+    public RecyclerAdapter(List<Contact> list) {
+        this.contactList = list;
     }
 
     @Override
@@ -29,13 +30,17 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder viewHolder, int position) {
         RecyclerItemViewHolder recyclerItemViewHolder = (RecyclerItemViewHolder) viewHolder;
-        String itemText = mItemList.get(position);
-        recyclerItemViewHolder.setItemText(itemText);
+        //String itemText = mItemList.get(position);
+        Contact contact = contactList.get(position);
+        recyclerItemViewHolder.setName(contact.getName());
+        recyclerItemViewHolder.setEmail(contact.getEmail());
+        recyclerItemViewHolder.setPhone(contact.getPhone());
+        recyclerItemViewHolder.setOffice(contact.getOfficePhone());
     }
 
     @Override
     public int getItemCount() {
-        return mItemList == null ? 0 : mItemList.size();
+        return contactList == null ? 0 : contactList.size();
     }
 
 }
