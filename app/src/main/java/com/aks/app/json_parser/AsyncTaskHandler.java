@@ -1,21 +1,19 @@
 package com.aks.app.json_parser;
 
-import android.Manifest;
 import android.app.ProgressDialog;
 import android.content.ContentProviderOperation;
+import android.content.ContentValues;
 import android.content.Context;
-import android.content.Intent;
 import android.content.OperationApplicationException;
-import android.content.pm.PackageManager;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.RemoteException;
 import android.provider.ContactsContract;
 import android.util.Log;
-import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
-import com.aks.app.json_parser.model.Contacts;
+import com.aks.app.database.StandardStorageHelper;
+import com.aks.app.database.model.MarkerContacts;
+import com.aks.app.database.schema.ContactSchemaBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.json.JSONArray;
@@ -23,22 +21,18 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
-
-import static android.support.v4.content.PermissionChecker.checkSelfPermission;
 
 /**
  * Created by Aakash Singh on 21-12-2016.
  */
 
-public class AsyncTaskHandler extends AsyncTask<Void, String, ArrayList<Contacts>> {
+public class AsyncTaskHandler extends AsyncTask<Void, String, ArrayList<MarkerContacts>> {
 
     private static AsyncTaskHandler asyncTaskHandler;
     private ProgressDialog progressDialog;
     private Context context;
-    private static ArrayList<Contacts> contactsArrayList;
+    private static ArrayList<MarkerContacts> markerContactsArrayList;
 
     private AsyncTaskHandler(Context context, ProgressDialog progressDialog) {
         Log.d("AsyncTaskHandler - const", "AsyncTaskHandler - const");
@@ -56,23 +50,23 @@ public class AsyncTaskHandler extends AsyncTask<Void, String, ArrayList<Contacts
         return asyncTaskHandler;
     }
 
-    public static ArrayList<Contacts> getJSONArraylist() {
-        return contactsArrayList;
+    public static ArrayList<MarkerContacts> getJSONArraylist() {
+        return markerContactsArrayList;
     }
 
     @Override
     protected void onPreExecute() {
         super.onPreExecute();
         Log.d("onPreExecute", "onPreExecute");
-        progressDialog.setMessage("Fetching JSON data");
+        progressDialog.setMessage("Fetching JSON data...");
         progressDialog.show();
     }
 
     @Override
-    protected ArrayList<Contacts> doInBackground(Void... params) {
+    protected ArrayList<MarkerContacts> doInBackground(Void... params) {
         Log.d("doInBackground", "doInBackground");
         ObjectMapper objectMapper = new ObjectMapper();
-        contactsArrayList = new ArrayList<>();
+        markerContactsArrayList = new ArrayList<>();
         try {
             HttpHandler httpHandler = new HttpHandler();
             String url = "http://api.androidhive.info/contacts/";
@@ -91,7 +85,7 @@ public class AsyncTaskHandler extends AsyncTask<Void, String, ArrayList<Contacts
                     // Getting JSON Array node
                     JSONArray jsonArray = jsonObj.getJSONArray("contacts");
 
-                    // looping through All Contacts
+                    // looping through All MarkerContacts
                     for (int i = 0; i < jsonArray.length(); i++) {
                         JSONObject c = jsonArray.getJSONObject(i);
 
@@ -122,7 +116,7 @@ public class AsyncTaskHandler extends AsyncTask<Void, String, ArrayList<Contacts
                         String latitude = c.getString("latitude");
                         String longitude = c.getString("longitude");
 
-                        System.out.println("Contact No : " + i);
+                        System.out.println("Contact No : " + i+1);
                         System.out.println("name : " + name + " ;");
                         System.out.println("email : " + email + " ;");
                         System.out.println("phone : " + phone + " ;");
@@ -131,22 +125,28 @@ public class AsyncTaskHandler extends AsyncTask<Void, String, ArrayList<Contacts
                         System.out.println("longitude : " + longitude + " ;");
                         System.out.println("===================================");
 
-                        Contacts contacts = new Contacts();
-                        contacts.setName(name);
-                        contacts.setEmail(email);
-                        contacts.setPhone(phone);
-                        contacts.setOfficePhone(officePhone);
-                        contacts.setLatitude(latitude);
-                        contacts.setLongitude(longitude);
+                        MarkerContacts markerContacts = new MarkerContacts();
+                        markerContacts.setName(name);
+                        markerContacts.setEmail(email);
+                        markerContacts.setPhone(phone);
+                        markerContacts.setOfficePhone(officePhone);
+                        markerContacts.setLatitude(latitude);
+                        markerContacts.setLongitude(longitude);
 
                         // adding contact to contact list
-                        contactsArrayList.add(contacts);
+                        markerContactsArrayList.add(markerContacts);
+
+                        //insert In DB
+                        insertIntoDB(markerContacts);
 
                         //de-referencing reference variable
-                        //contacts = null;
+                        //markerContacts = null;
                     }
                     publishProgress("Json list fetched...");
-                    return contactsArrayList;
+
+                    //storing in address book
+                    storeInAddressBook(markerContactsArrayList);
+                    return markerContactsArrayList;
 
 
                 } catch (Exception e) {
@@ -157,7 +157,7 @@ public class AsyncTaskHandler extends AsyncTask<Void, String, ArrayList<Contacts
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return contactsArrayList;
+        return markerContactsArrayList;
     }
 
     @Override
@@ -168,38 +168,45 @@ public class AsyncTaskHandler extends AsyncTask<Void, String, ArrayList<Contacts
     }
 
     @Override
-    protected void onPostExecute(ArrayList<Contacts> contactsArrayList) {
+    protected void onPostExecute(ArrayList<MarkerContacts> markerContactsArrayList) {
         Log.d("onPostExecute", "onPostExecute");
         progressDialog.dismiss();
-        Collections.sort(contactsArrayList);
-        Iterator<Contacts> iterator = contactsArrayList.iterator();
+        Toast.makeText(context, "Contacts are successfully saved", Toast.LENGTH_SHORT).show();
+        Collections.sort(markerContactsArrayList);
+        Iterator<MarkerContacts> iterator = markerContactsArrayList.iterator();
         while (iterator.hasNext()) {
-            Contacts contacts = iterator.next();
-            System.out.println("getName : " + contacts.getName() + " ;");
-            System.out.println("getEmail : " + contacts.getEmail() + " ;");
-            System.out.println("getPhone : " + contacts.getPhone() + " ;");
-            System.out.println("getOfficePhone : " + contacts.getOfficePhone() + " ;");
-            System.out.println("getLatitude : " + contacts.getLatitude() + " ;");
-            System.out.println("getLongitude : " + contacts.getLongitude() + " ;");
+            MarkerContacts markerContacts = iterator.next();
+            System.out.println("getName : " + markerContacts.getName() + " ;");
+            System.out.println("getEmail : " + markerContacts.getEmail() + " ;");
+            System.out.println("getPhone : " + markerContacts.getPhone() + " ;");
+            System.out.println("getOfficePhone : " + markerContacts.getOfficePhone() + " ;");
+            System.out.println("getLatitude : " + markerContacts.getLatitude() + " ;");
+            System.out.println("getLongitude : " + markerContacts.getLongitude() + " ;");
             System.out.println("'''''''''''''''''''''''''''''''''''''''''''''''''''''''");
         }
-
-        //storing in address book
-        storeInAddressBook(contactsArrayList);
     }
 
-    private void storeInAddressBook(ArrayList<Contacts> contactsArrayList) {
-        Iterator<Contacts> iterator = contactsArrayList.iterator();
+    private long insertIntoDB(MarkerContacts markerContacts)
+    {
+        //Storing row to DB
+        ContentValues contentValues = markerContacts.getContentValues();
+        long id = StandardStorageHelper.getInstance().insertToDB(ContactSchemaBuilder.TABLE_NAME, contentValues);
+        Log.d("Inserted row id : ", "" + id + " ;");
+        return id;
+    }
+
+    private void storeInAddressBook(ArrayList<MarkerContacts> markerContactsArrayList) {
+        Iterator<MarkerContacts> iterator = markerContactsArrayList.iterator();
         String name = null;
         String email = null;
         String phone = null;
         String officePhone = null;
         while (iterator.hasNext()) {
-            Contacts contacts = iterator.next();
-            name = contacts.getName();
-            email = contacts.getEmail();
-            phone = contacts.getPhone();
-            officePhone = contacts.getOfficePhone();
+            MarkerContacts markerContacts = iterator.next();
+            name = markerContacts.getName();
+            email = markerContacts.getEmail();
+            phone = markerContacts.getPhone();
+            officePhone = markerContacts.getOfficePhone();
 
             //''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
@@ -261,7 +268,6 @@ public class AsyncTaskHandler extends AsyncTask<Void, String, ArrayList<Contacts
             try {
                 // Executing all the insert operations as a single database transaction
                 context.getContentResolver().applyBatch(ContactsContract.AUTHORITY, ops);
-                Toast.makeText(context, "Contact is successfully added", Toast.LENGTH_SHORT).show();
             } catch (RemoteException e) {
                 e.printStackTrace();
             } catch (OperationApplicationException e) {
@@ -269,8 +275,8 @@ public class AsyncTaskHandler extends AsyncTask<Void, String, ArrayList<Contacts
             }
 
 //            //starting activity
-//            // Creating an intent to open Android's Contacts List
-//            Intent addressBook = new Intent(Intent.ACTION_VIEW, ContactsContract.Contacts.CONTENT_URI);
+//            // Creating an intent to open Android's MarkerContacts List
+//            Intent addressBook = new Intent(Intent.ACTION_VIEW, ContactsContract.MarkerContacts.CONTENT_URI);
 //
 //            // Starting the activity
 //            context.startActivity(addressBook);

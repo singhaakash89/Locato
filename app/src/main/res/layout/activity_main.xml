@@ -50,6 +50,6 @@
         android:layout_gravity="end|bottom"
         android:layout_margin="@dimen/fab_margin"
         app:rippleColor="@color/primary"
-        app:srcCompat="@android:drawable/ic_dialog_email" />
-
+        app:srcCompat="@drawable/fab_4"
+        android:elevation="100dp"/>
 </android.support.design.widget.CoordinatorLayout>

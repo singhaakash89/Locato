@@ -18,9 +18,10 @@ import android.widget.Toast;
 
 import com.aks.app.R;
 import com.aks.app.adapter.SectionsPagerAdapter;
+import com.aks.app.database.sharedPreference.SharedPreferenceManager;
 import com.aks.app.fragment.PlaceholderFragment;
 import com.aks.app.json_parser.AsyncTaskHandler;
-import com.aks.app.sharedPreference.SharedPreferenceManager;
+import com.aks.app.supervisor.SupervisorApplication;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -55,8 +56,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         context = this;
+        SupervisorApplication supervisorApplication = new SupervisorApplication(this);
         progressDialog = new ProgressDialog(context);
-        SharedPreferenceManager.createInstance(context);
         setContentView(R.layout.activity_main);
 
         //Toolbar
@@ -71,7 +72,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-
     private void initToolbar() {
         //Toolbar inflation
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -85,9 +85,12 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 Log.d("onClick", "onClick");
                 //JSON from URL
-                if (!SharedPreferenceManager.getInstance().getBoolean(hasContactFetched))
+//                if (!SharedPreferenceManager.getInstance().getBoolean(hasContactFetched)) {
+                if (true) {
                     getJSONFromURL();
-                else
+                    //update fragments
+                    PlaceholderFragment.getRecyclerAdapter().notifyDataSetChanged();
+                } else
                     Toast.makeText(context, "Contacts already saved", Toast.LENGTH_SHORT).show();
             }
         });
@@ -99,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
         mSectionsPagerAdapter.addFragment(PlaceholderFragment.newInstance(0, getSupportFragmentManager()), "ALL CONTACTS");
         mSectionsPagerAdapter.addFragment(PlaceholderFragment.newInstance(1, getSupportFragmentManager()), "CONTACTS MAP");
         mViewPager.setAdapter(mSectionsPagerAdapter);
+        mViewPager.setOffscreenPageLimit(5);
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabLayout);
         tabLayout.setupWithViewPager(mViewPager);
     }
@@ -107,8 +111,8 @@ public class MainActivity extends AppCompatActivity {
         // Tablayout for Tabs
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabLayout);
         //the below title will be used if you don't use "tabLayout.setupWithViewPager(mViewPager);"
-        tabLayout.addTab(tabLayout.newTab().setText("All Contacts"));
-        tabLayout.addTab(tabLayout.newTab().setText("Contacts Map"));
+        tabLayout.addTab(tabLayout.newTab().setText("All MarkerContacts"));
+        tabLayout.addTab(tabLayout.newTab().setText("MarkerContacts Map"));
 
         // onTabSelectedListener
         tabLayout.setupWithViewPager(mViewPager);
@@ -138,4 +142,35 @@ public class MainActivity extends AppCompatActivity {
         AsyncTaskHandler.getInstance().execute();
         SharedPreferenceManager.getInstance().putBoolean(hasContactFetched, true);
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        //Toolbar
+        initToolbar();
+
+        //FAB
+        initFAB();
+
+        //ViewPager and Tab together
+        initViewPagerAndTabs();
+        initTabLayout();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+    }
+
 }

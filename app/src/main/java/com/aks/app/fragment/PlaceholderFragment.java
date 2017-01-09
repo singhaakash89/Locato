@@ -6,7 +6,6 @@ package com.aks.app.fragment;
 
 
 import android.Manifest;
-import android.app.ProgressDialog;
 import android.content.ContentResolver;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -23,18 +22,17 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
-import android.widget.ArrayAdapter;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.aks.app.R;
 import com.aks.app.adapter.RecyclerAdapter;
+import com.aks.app.database.StandardStorageHelper;
+import com.aks.app.database.accessor.ContactAccessor;
 import com.aks.app.database.model.Contact;
-import com.aks.app.json_parser.AsyncTaskHandler;
-import com.aks.app.json_parser.model.Contacts;
+import com.aks.app.database.model.MarkerContacts;
+import com.aks.app.database.schema.ContactSchemaBuilder;
 import com.aks.app.json_parser.model.Marker;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -58,8 +56,9 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
     private boolean userScrolled = true;
     private int pastVisiblesItems, visibleItemCount, totalItemCount;
     private LinearLayoutManager mLayoutManager;
-    private RecyclerAdapter recyclerAdapter;
+    private static RecyclerAdapter recyclerAdapter;
     private MarkerOptions marker;
+    private List<MarkerContacts> markerArrayList;
     private LatLng position;
     private static FragmentManager fragmentManager;
     private ListView listView;
@@ -106,21 +105,14 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
                 setupRecyclerView();
                 //add scroll listener
                 addScrollListener(progressBarLayout);
-                //show 10 Contacts
+                //show 10 MarkerContacts
                 //showContacts();
                 break;
 
             case 1:
-                ArrayList<Marker> markerArrayList = new ArrayList<>();
-                Marker marker = null;
-//                ArrayList<Contacts> contactsArrayList = AsyncTaskHandler.getJSONArraylist();
-//                for (Contacts contacts : contactsArrayList) {
-//                    marker = new Marker();
-//                    marker.setLattitude(Double.parseDouble(contacts.getLatitude()));
-//                    marker.setLongitude(Double.parseDouble(contacts.getLongitude()));
-//                    markerArrayList.add(marker);
-//                }
-                view = showMarker(inflater, container, savedInstanceState, markerArrayList);
+                markerArrayList = createMarkerList();
+                Log.d("markerArrayList.size : ", "" + markerArrayList.size() + " ;");
+                view = showMarker(inflater, container, savedInstanceState);
                 break;
         }
         return view;
@@ -142,6 +134,10 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
         recyclerAdapter = new RecyclerAdapter(contactList);
         recyclerView.setAdapter(recyclerAdapter);
         recyclerAdapter.notifyDataSetChanged();
+    }
+
+    public static RecyclerAdapter getRecyclerAdapter() {
+        return recyclerAdapter;
     }
 
     private void addScrollListener(final RelativeLayout progressBarLayout) {
@@ -190,7 +186,7 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
                 // notify adapter
                 recyclerAdapter.notifyDataSetChanged();
                 // Toast for task completion
-                Toast.makeText(getActivity(), "Contacts updated.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getActivity(), "Contacts list updated.", Toast.LENGTH_SHORT).show();
                 // After adding new data hide the view.
                 progressBarLayout.setVisibility(View.GONE);
             }
@@ -255,7 +251,7 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
         // Get the ContentResolver
         ContentResolver cr = getActivity().getContentResolver();
         //initialize cusor
-        Cursor cur = cr.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, ContactsContract.Contacts.DISPLAY_NAME + " ASC" + " LIMIT 10 OFFSET " + count + "");
+        Cursor cur = cr.query(ContactsContract.Contacts.CONTENT_URI, null, null, null, ContactsContract.Contacts.DISPLAY_NAME + " ASC" + " LIMIT 20 OFFSET " + count + "");
         if (cur.getCount() > 0) {
             Log.d("Inside if_cur_count>0", " Done");
             while (cur.moveToNext()) {
@@ -351,9 +347,28 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
         return contactList;
     }
 
-    private View showMarker(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState, ArrayList<Marker> markerArrayList) {
+    public List<MarkerContacts> createMarkerList() {
+        List<MarkerContacts> markerContactsArrayList = new ArrayList<>();
+        Cursor cursor = StandardStorageHelper.getInstance().queryFromDB(ContactSchemaBuilder.TABLE_NAME, ContactAccessor.getTableProjection());
+        cursor.moveToFirst();
+        if (cursor.getCount() > 0 && !cursor.isAfterLast()) {
+            while (cursor.moveToNext()) {
+                MarkerContacts markerContacts = new MarkerContacts();
+                markerContacts.setName(cursor.getString(cursor.getColumnIndex(ContactAccessor.NAME)));
+                markerContacts.setEmail(cursor.getString(cursor.getColumnIndex(ContactAccessor.EMAIL)));
+                markerContacts.setPhone(cursor.getString(cursor.getColumnIndex(ContactAccessor.PHONE)));
+                markerContacts.setOfficePhone(cursor.getString(cursor.getColumnIndex(ContactAccessor.OFFICE_PHONE)));
+                markerContacts.setLatitude(cursor.getString(cursor.getColumnIndex(ContactAccessor.LATTITUDE)));
+                markerContacts.setLongitude(cursor.getString(cursor.getColumnIndex(ContactAccessor.LONGITUDE)));
 
-        ArrayList<MarkerOptions> markerOptions = new ArrayList<>();
+                markerContactsArrayList.add(markerContacts);
+            }
+            cursor.close();
+        }
+        return markerContactsArrayList;
+    }
+
+    public View showMarker(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
         View rootView = inflater.inflate(R.layout.fragment_two, container, false);
 
@@ -364,29 +379,6 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
 
         mapView.onResume();
 
-        // latitude and longitude
-        double latitude = 17.385044;
-
-        double longitude = 78.486671;
-
-        position = new LatLng(latitude, longitude);
-
-        // Instantiating MarkerOptions class
-        marker = new MarkerOptions();
-
-        // Setting position for the MarkerOptions
-        marker.position(position);
-
-        // Setting title for the MarkerOptions
-        marker.title("Position");
-
-        // Setting snippet for the MarkerOptions
-        marker.snippet("Latitude:" + latitude + ",Longitude:" + longitude);
-
-        // Changing marker icon
-        marker.icon(BitmapDescriptorFactory
-                .defaultMarker(BitmapDescriptorFactory.HUE_RED));
-
         // Getting reference to google map
         mapView.getMapAsync(this);
 
@@ -395,22 +387,90 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        // Adding Marker on the Google Map
-        googleMap.addMarker(marker);
+        Log.d("Inside ", "onMapReady");
 
-        // Creating CameraUpdate object for position
-        CameraUpdate updatePosition = CameraUpdateFactory.newLatLng(position);
+        Log.d("markerArrayList.size()", "" + markerArrayList.size() + " ;\n\n");
+        for (MarkerContacts markerContacts : markerArrayList) {
+            Log.d("markerContacts.getName()", "" + markerContacts.getName() + " ;");
+            Log.d("markerContacts.getEmail()", "" + markerContacts.getEmail() + " ;");
+            Log.d("markerContacts.getPhone()", "" + markerContacts.getPhone() + " ;");
+            Log.d("markerContacts.getOfficePhone()", "" + markerContacts.getOfficePhone() + " ;");
+            Log.d("markerContacts.getLatitude()", "" + markerContacts.getLatitude() + " ;");
+            Log.d("markerContacts.getLongitude()", "" + markerContacts.getLongitude() + " ;");
+            Log.d("============================", "============================");
+            Log.d("\n", "\n");
+        }
 
-        // Creating CameraUpdate object for zoom
-        CameraUpdate updateZoom = CameraUpdateFactory.zoomBy(4);
+        for (MarkerContacts markerContacts : markerArrayList) {
+            position = new LatLng(Double.valueOf(markerContacts.getLatitude()), Double.valueOf(markerContacts.getLongitude()));
 
-        // Updating the camera position to the user input latitude and longitude
-        googleMap.moveCamera(updatePosition);
+            // Instantiating MarkerOptions class
+            marker = new MarkerOptions();
 
-        // Applying zoom to the marker position
-        googleMap.animateCamera(updateZoom);
+            // Setting position for the MarkerOptions
+            marker.position(position);
+
+            // Setting title for the MarkerOptions
+            marker.title(markerContacts.getName());
+
+            // Setting snippet for the MarkerOptions
+
+            //email is null
+            if (null != markerContacts.getEmail())
+                marker.snippet("Phone:" + markerContacts.getPhone() + ",Office:" + markerContacts.getOfficePhone());
+            else if (null != markerContacts.getOfficePhone())
+                marker.snippet("Email:" + markerContacts.getEmail() + ",Phone:" + markerContacts.getPhone());
+            else if (null != markerContacts.getPhone())
+                marker.snippet("Email:" + markerContacts.getEmail() + ",Office:" + markerContacts.getOfficePhone());
+
+            // Changing marker icon
+            marker.icon(BitmapDescriptorFactory
+                    .defaultMarker(BitmapDescriptorFactory.HUE_RED));
+
+            // Adding Marker on the Google Map
+            googleMap.addMarker(marker);
+
+//            // Creating CameraUpdate object for position
+//            CameraUpdate updatePosition = CameraUpdateFactory.newLatLng(position);
+//
+//            // Creating CameraUpdate object for zoom
+//            CameraUpdate updateZoom = CameraUpdateFactory.zoomBy(4);
+//
+//            // Updating the camera position to the user input latitude and longitude
+//            googleMap.moveCamera(updatePosition);
+//
+//            // Applying zoom to the marker position
+//            googleMap.animateCamera(updateZoom);
+
+        }
+
+        //''''''''''''''''''''''''''''''''''''''''''''''''
+
     }
 
+    @Override
+    public void onPause() {
+        super.onPause();
+    }
 
+    @Override
+    public void onResume() {
+        super.onResume();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+    }
 }
 

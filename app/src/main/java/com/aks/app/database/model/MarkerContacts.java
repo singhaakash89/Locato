@@ -1,5 +1,8 @@
-package com.aks.app.json_parser.model;
+package com.aks.app.database.model;
 
+import android.content.ContentValues;
+
+import com.aks.app.database.accessor.ContactAccessor;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
@@ -7,7 +10,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  */
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Contacts implements Comparable{
+public class MarkerContacts implements Comparable{
     private String name;
     private String email;
     private String phone;
@@ -15,7 +18,7 @@ public class Contacts implements Comparable{
     private String latitude;
     private String longitude;
 
-    public Contacts() {
+    public MarkerContacts() {
     }
 
     public String getName() {
@@ -66,14 +69,25 @@ public class Contacts implements Comparable{
         this.longitude = longitude;
     }
 
+    public ContentValues getContentValues() {
+        ContentValues row = new ContentValues();
+        row.put(ContactAccessor.NAME,getName());
+        row.put(ContactAccessor.EMAIL,getEmail());
+        row.put(ContactAccessor.PHONE,getPhone());
+        row.put(ContactAccessor.OFFICE_PHONE,getOfficePhone());
+        row.put(ContactAccessor.LATTITUDE,getLatitude());
+        row.put(ContactAccessor.LONGITUDE,getLongitude());
+        return row;
+    }
+
     @Override
     public int compareTo(Object another) {
 
         //for integer
-        //int comparePhone = ((Contacts) another).getPhone();
+        //int comparePhone = ((MarkerContacts) another).getPhone();
 
         //for String
-        String compareName = ((Contacts) another).getName();
+        String compareName = ((MarkerContacts) another).getName();
 
         /* For Ascending order*/
 

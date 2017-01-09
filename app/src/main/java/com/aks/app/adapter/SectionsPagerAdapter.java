@@ -44,21 +44,17 @@ public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
 
     @Override
     public int getCount() {
-//        // Show 2 total pages.
-//        return 2;
         return fragmentList.size();
     }
 
     @Override
     public CharSequence getPageTitle(int position) {
-//        switch (position) {
-//            case 0:
-//                return "ALL CONTACTS";
-//            case 1:
-//                return "CONTACTS MAP";
-//        }
-//        return null;
-
         return fragmentTitleList.get(position);
+    }
+
+    @Override
+    public int getItemPosition(Object object) {
+        // POSITION_NONE makes it possible to reload the PagerAdapter
+        return POSITION_NONE;
     }
 }
