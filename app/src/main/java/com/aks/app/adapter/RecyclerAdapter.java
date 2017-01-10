@@ -43,4 +43,9 @@ public class RecyclerAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         return contactList == null ? 0 : contactList.size();
     }
 
+    @Override
+    public int getItemViewType(int position) {
+        return position;
+    }
+
 }

@@ -14,6 +14,7 @@ import android.widget.Toast;
 import com.aks.app.database.StandardStorageHelper;
 import com.aks.app.database.model.MarkerContacts;
 import com.aks.app.database.schema.ContactSchemaBuilder;
+import com.aks.app.toast_manager.ToastManager;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.json.JSONArray;
@@ -116,7 +117,7 @@ public class AsyncTaskHandler extends AsyncTask<Void, String, ArrayList<MarkerCo
                         String latitude = c.getString("latitude");
                         String longitude = c.getString("longitude");
 
-                        System.out.println("Contact No : " + i+1);
+                        System.out.println("Contact No : " + i + 1);
                         System.out.println("name : " + name + " ;");
                         System.out.println("email : " + email + " ;");
                         System.out.println("phone : " + phone + " ;");
@@ -171,7 +172,7 @@ public class AsyncTaskHandler extends AsyncTask<Void, String, ArrayList<MarkerCo
     protected void onPostExecute(ArrayList<MarkerContacts> markerContactsArrayList) {
         Log.d("onPostExecute", "onPostExecute");
         progressDialog.dismiss();
-        Toast.makeText(context, "Contacts are successfully saved", Toast.LENGTH_SHORT).show();
+        ToastManager.getInstance().showSimpleToastShort("Contacts are successfully saved");
         Collections.sort(markerContactsArrayList);
         Iterator<MarkerContacts> iterator = markerContactsArrayList.iterator();
         while (iterator.hasNext()) {
@@ -186,8 +187,7 @@ public class AsyncTaskHandler extends AsyncTask<Void, String, ArrayList<MarkerCo
         }
     }
 
-    private long insertIntoDB(MarkerContacts markerContacts)
-    {
+    private long insertIntoDB(MarkerContacts markerContacts) {
         //Storing row to DB
         ContentValues contentValues = markerContacts.getContentValues();
         long id = StandardStorageHelper.getInstance().insertToDB(ContactSchemaBuilder.TABLE_NAME, contentValues);

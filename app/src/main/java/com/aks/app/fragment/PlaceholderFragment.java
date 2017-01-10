@@ -34,6 +34,7 @@ import com.aks.app.database.model.Contact;
 import com.aks.app.database.model.MarkerContacts;
 import com.aks.app.database.schema.ContactSchemaBuilder;
 import com.aks.app.json_parser.model.Marker;
+import com.aks.app.toast_manager.ToastManager;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -186,14 +187,14 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
                 // notify adapter
                 recyclerAdapter.notifyDataSetChanged();
                 // Toast for task completion
-                Toast.makeText(getActivity(), "Contacts list updated.", Toast.LENGTH_SHORT).show();
+                ToastManager.getInstance().showSimpleToastShort("Contacts list updated");
                 // After adding new data hide the view.
                 progressBarLayout.setVisibility(View.GONE);
             }
         }, 2000);
     }
 
-    private List<Contact> createContactList() {
+    public List<Contact> createContactList() {
         contactList = new ArrayList<>();
         contactList = getAllContact(20);
         return contactList;
@@ -347,7 +348,7 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
         return contactList;
     }
 
-    public List<MarkerContacts> createMarkerList() {
+    public static List<MarkerContacts> createMarkerList() {
         List<MarkerContacts> markerContactsArrayList = new ArrayList<>();
         Cursor cursor = StandardStorageHelper.getInstance().queryFromDB(ContactSchemaBuilder.TABLE_NAME, ContactAccessor.getTableProjection());
         cursor.moveToFirst();
@@ -456,6 +457,7 @@ public class PlaceholderFragment extends Fragment implements OnMapReadyCallback 
     @Override
     public void onResume() {
         super.onResume();
+        markerArrayList = createMarkerList();
     }
 
     @Override

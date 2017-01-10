@@ -40,7 +40,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
-
     </android.support.v4.view.ViewPager>
 
     <android.support.design.widget.FloatingActionButton
@@ -51,5 +50,7 @@
         android:layout_margin="@dimen/fab_margin"
         app:rippleColor="@color/primary"
         app:srcCompat="@drawable/fab_4"
-        android:elevation="100dp"/>
+        android:elevation="100dp"
+        android:scaleType="centerCrop"/>
+
 </android.support.design.widget.CoordinatorLayout>
